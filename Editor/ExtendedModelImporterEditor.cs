@@ -82,6 +82,10 @@ namespace D3TEditor.BlenderModelFixer
 
 			ApplyRevertGUI();
 
+			if(GUILayout.Button("Force apply"))
+			{
+				ApplyAndImport();
+			}
 		}
 
 		private void DrawBlenderImportFixProperties()
