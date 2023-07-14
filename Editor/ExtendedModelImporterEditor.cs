@@ -139,6 +139,17 @@ namespace D3TEditor.BlenderModelFixer
 
 		protected override void Apply()
 		{
+			// tabs can do work before or after the application of changes in the serialization object
+			foreach(var tab in tabs)
+			{
+				var m = tab.GetType().GetMethod("PreApply", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				if(m != null)
+				{
+					m.Invoke(tab, new object[0]);
+				}
+			}
+
+
 			for(int i = 0; i < targets.Length; i++)
 			{
 				var d = (BlenderFixesExtraData)extraDataTargets[i];
@@ -147,6 +158,16 @@ namespace D3TEditor.BlenderModelFixer
 				ud.ApplyModified(targets[i]);
 			}
 			base.Apply();
+
+
+			foreach(var tab in tabs)
+			{
+				var m = tab.GetType().GetMethod("PostApply", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				if(m != null)
+				{
+					m.Invoke(tab, new object[0]);
+				}
+			}
 		}
 
 		protected override Type extraDataType => typeof(BlenderFixesExtraData);
