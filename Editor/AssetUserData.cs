@@ -21,6 +21,8 @@ namespace D3TEditor.BlenderModelFixer
 			this.data = data;
 		}
 
+		public bool ContainsKey(string key) => data.ContainsKey(key);
+
 		public bool GetBool(string key, bool fallback)
 		{
 			if(data.TryGetValue(key, out object value)) return (bool)value;
@@ -30,6 +32,12 @@ namespace D3TEditor.BlenderModelFixer
 		public string GetString(string key, string fallback)
 		{
 			if(data.TryGetValue(key, out object value)) return (string)value;
+			else return fallback;
+		}
+
+		public int GetInt(string key, int fallback)
+		{
+			if(data.TryGetValue(key, out object value)) return (int)value;
 			else return fallback;
 		}
 
@@ -47,6 +55,23 @@ namespace D3TEditor.BlenderModelFixer
 			}
 			data[key] = value;
 			IsDirty = true;
+		}
+
+		public void SetValue(SerializedProperty property)
+		{
+			SetValue(property.name, GetPropertyValue(property));
+		}
+
+		private static object GetPropertyValue(SerializedProperty property)
+		{
+			switch(property.propertyType)
+			{
+				case SerializedPropertyType.Boolean: return property.boolValue;
+				case SerializedPropertyType.Integer: return property.intValue;
+				case SerializedPropertyType.Float: return property.floatValue;
+				case SerializedPropertyType.String: return property.stringValue;
+				default: throw new System.NotImplementedException();
+			}
 		}
 
 		public string Serialize()

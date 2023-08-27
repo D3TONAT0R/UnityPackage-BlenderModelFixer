@@ -8,13 +8,14 @@ namespace D3TEditor.BlenderModelFixer
 {
 	public class BlenderFBXPostProcessor : AssetPostprocessor
 	{
-		public const string postProcessorUserDataKey = "applyBlenderAxisConversion";
 
 		void OnPostprocessModel(GameObject root)
 		{
 			var mi = assetImporter as ModelImporter;
-			if(ShouldApplyBlenderTransformFix(mi))
+			if(ShouldApplyBlenderTransformFix(mi, out var userData))
 			{
+				bool flipZ = userData.GetBool(nameof(BlenderFixesExtraData.flipZAxis), false);
+
 				//Debug.Log("Applying fix on "+root.name);
 				List<Mesh> meshes = new List<Mesh>();
 				LocateMeshes(meshes, root.transform);
@@ -39,13 +40,13 @@ namespace D3TEditor.BlenderModelFixer
 					else
 					{
 						var stored = transformStore[t];
-						var mod = ApplyTransformFix(t, stored.Item1, stored.Item2);
+						var mod = ApplyTransformFix(t, stored.Item1, stored.Item2, flipZ);
 						modifications.Add(t, mod);
 					}
 				}
 
-				//Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-89.98f, 180, 0));
-				Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-90, 180, 0));
+				//Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-89.98f, flipZ ? 180 : 0, 0));
+				Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-90, flipZ ? 180 : 0, 0));
 				foreach(var mesh in meshes)
 				{
 					ApplyMeshFix(mesh, matrix, mi.importTangents != ModelImporterTangents.None);
@@ -124,7 +125,7 @@ namespace D3TEditor.BlenderModelFixer
 			m.RecalculateBounds();
 		}
 
-		private Matrix4x4 ApplyTransformFix(Transform t, Vector3 storedPos, Quaternion storedRot)
+		private Matrix4x4 ApplyTransformFix(Transform t, Vector3 storedPos, Quaternion storedRot, bool flipZ)
 		{
 			Matrix4x4 before = t.localToWorldMatrix;
 
@@ -132,18 +133,22 @@ namespace D3TEditor.BlenderModelFixer
 			t.position = storedPos;
 			t.rotation = storedRot;
 
-			var fix = new Vector3(-1, 1, -1);
-
-			t.position = Vector3.Scale(t.position, fix);
-			t.eulerAngles = Vector3.Scale(t.eulerAngles, fix);
-
-			if((t.localEulerAngles - new Vector3(89.98f, 0, 0)).sqrMagnitude < 0.001f)
+			if(flipZ)
 			{
-				t.Rotate(new Vector3(-89.98f, 0, 0), Space.Self);
+				var fix = new Vector3(-1, 1, -1);
+				t.position = Vector3.Scale(t.position, fix);
+				t.eulerAngles = Vector3.Scale(t.eulerAngles, fix);
+			}
+
+			float sign = flipZ ? 1 : -1;
+
+			if((t.localEulerAngles - new Vector3(89.98f * sign, 0, 0)).sqrMagnitude < 0.001f)
+			{
+				t.Rotate(new Vector3(-89.98f * sign, 0, 0), Space.Self);
 			}
 			else
 			{
-				t.Rotate(new Vector3(-90, 0, 0), Space.Self);
+				t.Rotate(new Vector3(-90 * sign, 0, 0), Space.Self);
 			}
 
 			t.localScale = new Vector3(t.localScale.x, t.localScale.z, t.localScale.y);
@@ -177,14 +182,16 @@ namespace D3TEditor.BlenderModelFixer
 			}
 		}
 
-		private bool ShouldApplyBlenderTransformFix(ModelImporter mi)
+		private bool ShouldApplyBlenderTransformFix(ModelImporter mi, out AssetUserData userData)
 		{
 			if(IsModelValidForFix(mi.assetPath))
 			{
-				return AssetUserData.Deserialize(mi.userData).GetBool(postProcessorUserDataKey, false);
+				userData = AssetUserData.Deserialize(mi.userData);
+				return userData.GetBool(nameof(BlenderFixesExtraData.applyAxisConversion), false);
 			}
 			else
 			{
+				userData = null;
 				return false;
 			}
 		}

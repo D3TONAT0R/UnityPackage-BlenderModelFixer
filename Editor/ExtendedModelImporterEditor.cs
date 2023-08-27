@@ -82,10 +82,12 @@ namespace D3TEditor.BlenderModelFixer
 
 			ApplyRevertGUI();
 
+			/*
 			if(GUILayout.Button("Force apply"))
 			{
 				ApplyAndImport();
 			}
+			*/
 		}
 
 		private void DrawBlenderImportFixProperties()
@@ -93,16 +95,26 @@ namespace D3TEditor.BlenderModelFixer
 			if(supportState != SupportState.None)
 			{
 				GUILayout.Label("Blender Import Fixes", EditorStyles.boldLabel);
-				GUIContent label = new GUIContent("Apply Axis Conversion");
 
 				if(supportState == SupportState.All)
 				{
-					var property = extraDataSerializedObject.FindProperty(nameof(BlenderFixesExtraData.applyFix));
-					EditorGUILayout.PropertyField(property, label);
+					extraDataSerializedObject.Update();
+					var property = extraDataSerializedObject.GetIterator();
+					property.NextVisible(true);
+					property.NextVisible(false);
+					EditorGUILayout.PropertyField(property);
+					if(property.boolValue)
+					{
+						while(property.NextVisible(false))
+						{
+							EditorGUILayout.PropertyField(property);
+						}
+					}
+					extraDataSerializedObject.ApplyModifiedProperties();
 				}
 				else
 				{
-					EditorGUILayout.LabelField(label, new GUIContent("(Not all selected models can be fixed)"));
+					EditorGUILayout.LabelField(GUIContent.none, new GUIContent("(Not all selected models can be fixed)"));
 				}
 			}
 		}
@@ -152,10 +164,17 @@ namespace D3TEditor.BlenderModelFixer
 
 			for(int i = 0; i < targets.Length; i++)
 			{
-				var d = (BlenderFixesExtraData)extraDataTargets[i];
-				var ud = AssetUserData.Get(targets[i]);
-				ud.SetValue(BlenderFBXPostProcessor.postProcessorUserDataKey, d.applyFix);
-				ud.ApplyModified(targets[i]);
+				var extraData = (BlenderFixesExtraData)extraDataTargets[i];
+				var userData = AssetUserData.Get(targets[i]);
+				var serializedObject = new SerializedObject(extraData);
+				var property = serializedObject.GetIterator();
+				property.NextVisible(true);
+				//Skip script property
+				while(property.NextVisible(false))
+				{
+					userData.SetValue(property);
+				}
+				userData.ApplyModified(targets[i]);
 			}
 			base.Apply();
 
@@ -174,8 +193,9 @@ namespace D3TEditor.BlenderModelFixer
 
 		protected override void InitializeExtraDataInstance(UnityEngine.Object extraData, int targetIndex)
 		{
-			var d = (BlenderFixesExtraData)extraData;
-			d.applyFix = AssetUserData.Get(targets[targetIndex]).GetBool(BlenderFBXPostProcessor.postProcessorUserDataKey, false);
+			var fixesExtraData = (BlenderFixesExtraData)extraData;
+			var userData = AssetUserData.Get(targets[targetIndex]);
+			fixesExtraData.Initialize(userData);
 		}
 	} 
 }
