@@ -91,7 +91,7 @@ namespace D3TEditor.BlenderModelFixer
 
 		private void ApplyMeshFix(Mesh m, Matrix4x4 matrix, bool calculateTangents)
 		{
-			Debug.Log("Fixing mesh: " + m.name);
+			//Debug.Log("Fixing mesh: " + m.name);
 			var verts = m.vertices;
 			for(int i = 0; i < verts.Length; i++)
 			{
@@ -173,7 +173,7 @@ namespace D3TEditor.BlenderModelFixer
 					}
 				}
 				m.bindposes = bindposes;
-				Debug.Log("Bindposes fixed for " + m.name);
+				//Debug.Log("Bindposes fixed for " + m.name);
 			}
 		}
 
