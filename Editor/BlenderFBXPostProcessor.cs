@@ -44,7 +44,8 @@ namespace D3TEditor.BlenderModelFixer
 					}
 				}
 
-				Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-89.98f, 180, 0));
+				//Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-89.98f, 180, 0));
+				Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-90, 180, 0));
 				foreach(var mesh in meshes)
 				{
 					ApplyMeshFix(mesh, matrix, mi.importTangents != ModelImporterTangents.None);
@@ -132,10 +133,18 @@ namespace D3TEditor.BlenderModelFixer
 			t.rotation = storedRot;
 
 			var fix = new Vector3(-1, 1, -1);
-			
+
 			t.position = Vector3.Scale(t.position, fix);
 			t.eulerAngles = Vector3.Scale(t.eulerAngles, fix);
-			t.Rotate(new Vector3(-90, 0, 0), Space.Self);
+
+			if((t.localEulerAngles - new Vector3(89.98f, 0, 0)).sqrMagnitude < 0.001f)
+			{
+				t.Rotate(new Vector3(-89.98f, 0, 0), Space.Self);
+			}
+			else
+			{
+				t.Rotate(new Vector3(-90, 0, 0), Space.Self);
+			}
 
 			t.localScale = new Vector3(t.localScale.x, t.localScale.z, t.localScale.y);
 
@@ -186,5 +195,5 @@ namespace D3TEditor.BlenderModelFixer
 			if(File.ReadAllText(assetPath).Contains("Blender (stable FBX IO)")) return true;
 			return false;
 		}
-	} 
+	}
 }
