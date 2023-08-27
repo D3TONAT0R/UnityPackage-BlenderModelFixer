@@ -26,6 +26,7 @@ namespace D3TEditor.BlenderModelFixer
 					transformStore.Add(t, (t.position, t.rotation));
 				}
 
+				var modifications = new Dictionary<Transform, Matrix4x4>();
 				var transforms = transformStore.Keys.ToArray();
 				for(int i = 0; i < transforms.Length; i++)
 				{
@@ -38,7 +39,8 @@ namespace D3TEditor.BlenderModelFixer
 					else
 					{
 						var stored = transformStore[t];
-						ApplyTransformFix(t, stored.Item1, stored.Item2);
+						var mod = ApplyTransformFix(t, stored.Item1, stored.Item2);
+						modifications.Add(t, mod);
 					}
 				}
 
@@ -47,7 +49,12 @@ namespace D3TEditor.BlenderModelFixer
 				{
 					ApplyMeshFix(mesh, matrix, mi.importTangents != ModelImporterTangents.None);
 				}
-				Debug.Log("fixed it");
+
+				List<Mesh> fixedSkinnedMeshes = new List<Mesh>();
+				foreach(var smr in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+				{
+					ApplyBindPoseFix(smr, modifications, fixedSkinnedMeshes);
+				}
 			}
 			mi.SaveAndReimport();
 		}
@@ -100,21 +107,6 @@ namespace D3TEditor.BlenderModelFixer
 				}
 				m.normals = normals;
 			}
-			/*
-			if(m.bindposes != null)
-			{
-				var bindposes = m.bindposes;
-				if(bindposes != null)
-				{
-					for(int i = 0; i < bindposes.Length; i++)
-					{
-						bindposes[i] = bindposes[i] * matrix;
-					}
-				}
-				m.bindposes = bindposes;
-				Debug.Log("Bindposes fixed for " + m.name);
-			}
-			*/
 
 			/*
 			for(int i = 0; i < tangents.Length; i++)
@@ -131,8 +123,10 @@ namespace D3TEditor.BlenderModelFixer
 			m.RecalculateBounds();
 		}
 
-		private void ApplyTransformFix(Transform t, Vector3 storedPos, Quaternion storedRot)
+		private Matrix4x4 ApplyTransformFix(Transform t, Vector3 storedPos, Quaternion storedRot)
 		{
+			Matrix4x4 before = t.localToWorldMatrix;
+
 			//Debug.Log("Fixing transform: " + t.name);
 			t.position = storedPos;
 			t.rotation = storedRot;
@@ -144,6 +138,34 @@ namespace D3TEditor.BlenderModelFixer
 			t.Rotate(new Vector3(-90, 0, 0), Space.Self);
 
 			t.localScale = new Vector3(t.localScale.x, t.localScale.z, t.localScale.y);
+
+			Matrix4x4 after = t.localToWorldMatrix;
+
+			return after * before.inverse;
+		}
+
+		private void ApplyBindPoseFix(SkinnedMeshRenderer skinnedMeshRenderer, Dictionary<Transform, Matrix4x4> transformations, List<Mesh> fixedMeshes)
+		{
+			var m = skinnedMeshRenderer.sharedMesh;
+
+			if(fixedMeshes.Contains(m)) return;
+
+			fixedMeshes.Add(m);
+
+			if(m.bindposes != null)
+			{
+				var bindposes = m.bindposes;
+				if(bindposes != null)
+				{
+					for(int i = 0; i < bindposes.Length; i++)
+					{
+						var fix = transformations[skinnedMeshRenderer.bones[i]];
+						bindposes[i] *= fix.inverse;
+					}
+				}
+				m.bindposes = bindposes;
+				Debug.Log("Bindposes fixed for " + m.name);
+			}
 		}
 
 		private bool ShouldApplyBlenderTransformFix(ModelImporter mi)
