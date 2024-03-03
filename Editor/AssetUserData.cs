@@ -25,25 +25,25 @@ namespace D3TEditor.BlenderModelFixer
 
 		public bool GetBool(string key, bool fallback)
 		{
-			if(data.TryGetValue(key, out object value)) return (bool)value;
+			if(data.TryGetValue(key, out object value)) return System.Convert.ToBoolean(value);
 			else return fallback;
 		}
 
 		public string GetString(string key, string fallback)
 		{
-			if(data.TryGetValue(key, out object value)) return (string)value;
+			if(data.TryGetValue(key, out object value)) return System.Convert.ToString(value);
 			else return fallback;
 		}
 
 		public int GetInt(string key, int fallback)
 		{
-			if(data.TryGetValue(key, out object value)) return (int)value;
+			if(data.TryGetValue(key, out object value)) return System.Convert.ToInt32(value);
 			else return fallback;
 		}
 
 		public float GetFloat(string key, float fallback)
 		{
-			if(data.TryGetValue(key, out object value)) return (float)value;
+			if(data.TryGetValue(key, out object value)) return System.Convert.ToSingle(value);
 			else return fallback;
 		}
 
