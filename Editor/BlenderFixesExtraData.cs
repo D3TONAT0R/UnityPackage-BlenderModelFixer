@@ -7,6 +7,9 @@ namespace D3TEditor.BlenderModelFixer
 	{
 		public bool applyAxisConversion = false;
 		public bool flipZAxis = true;
+		public bool fixLights = true;
+		public float lightIntensityFactor = 0.01f;
+		public float lightRangeFactor = 0.1f;
 
 		public void Initialize(AssetUserData userData)
 		{

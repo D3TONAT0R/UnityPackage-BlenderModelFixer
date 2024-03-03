@@ -100,10 +100,10 @@ namespace D3TEditor.BlenderModelFixer
 
 		public static AssetUserData Get(string assetPath)
 		{
-			return Deserialize(AssetImporter.GetAtPath(assetPath).userData);
+			return TryDeserialize(AssetImporter.GetAtPath(assetPath).userData);
 		}
 
-		public static AssetUserData Deserialize(string userDataString)
+		public static AssetUserData TryDeserialize(string userDataString)
 		{
 			if(string.IsNullOrWhiteSpace(userDataString))
 			{

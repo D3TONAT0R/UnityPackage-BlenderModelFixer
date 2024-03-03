@@ -33,7 +33,10 @@ namespace D3TEditor.BlenderModelFixer
 		void OnPostprocessModel(GameObject root)
 		{
 			var modelImporter = assetImporter as ModelImporter;
-			if(ShouldApplyBlenderTransformFix(modelImporter, out var userData))
+			var userData = AssetUserData.TryDeserialize(modelImporter.userData);
+
+			bool modified = false;
+			if(ShouldApplyBlenderTransformFix(modelImporter, userData))
 			{
 				bool flipZ = userData.GetBool(nameof(BlenderFixesExtraData.flipZAxis), false);
 
@@ -61,6 +64,7 @@ namespace D3TEditor.BlenderModelFixer
 					else
 					{
 						var stored = transformStore[t];
+						if(t.TryGetComponent<Light>(out _)) continue; //skip light transforms
 						var mod = ApplyTransformFix(t, stored.Item1, stored.Item2, flipZ);
 						modifications.Add(t, mod);
 					}
@@ -79,6 +83,24 @@ namespace D3TEditor.BlenderModelFixer
 					ApplyBindPoseFix(smr, modifications, fixedSkinnedMeshes);
 				}
 
+				modified = true;
+			}
+			if(ShouldApplyLightFix(userData, out float intensityFactor, out float rangeFactor))
+			{
+				foreach(var light in root.GetComponentsInChildren<Light>(true))
+				{
+					if(light.type != LightType.Directional)
+					{
+						var power = light.intensity;
+						light.intensity = power * intensityFactor;
+						light.range = power * rangeFactor;
+						modified = true;
+					}
+				}
+			}
+
+			if(modified)
+			{
 				modelImporter.SaveAndReimport();
 			}
 		}
@@ -86,7 +108,8 @@ namespace D3TEditor.BlenderModelFixer
 		void OnPostprocessAnimation(GameObject root, AnimationClip clip)
 		{
 			var modelImporter = assetImporter as ModelImporter;
-			if(ShouldApplyBlenderTransformFix(modelImporter, out var userData))
+			var userData = AssetUserData.TryDeserialize(modelImporter.userData);
+			if(ShouldApplyBlenderTransformFix(modelImporter, userData))
 			{
 				bool flipZ = userData.GetBool(nameof(BlenderFixesExtraData.flipZAxis), false);
 				var bindings = AnimationUtility.GetCurveBindings(clip);
@@ -329,16 +352,31 @@ namespace D3TEditor.BlenderModelFixer
 			}
 		}
 
-		private bool ShouldApplyBlenderTransformFix(ModelImporter mi, out AssetUserData userData)
+		private bool ShouldApplyBlenderTransformFix(ModelImporter mi, AssetUserData userData)
 		{
 			if(IsModelValidForFix(mi.assetPath))
 			{
-				userData = AssetUserData.Deserialize(mi.userData);
 				return userData.GetBool(nameof(BlenderFixesExtraData.applyAxisConversion), false);
 			}
 			else
 			{
-				userData = null;
+				return false;
+			}
+		}
+
+		private bool ShouldApplyLightFix(AssetUserData userData, out float intensityFactor, out float rangeFactor)
+		{
+			bool fix = userData.GetBool(nameof(BlenderFixesExtraData.fixLights), false);
+			if(fix)
+			{
+				intensityFactor = userData.GetFloat(nameof(BlenderFixesExtraData.lightIntensityFactor), 0.01f);
+				rangeFactor = userData.GetFloat(nameof(BlenderFixesExtraData.lightRangeFactor), 0.1f);
+				return true;
+			}
+			else
+			{
+				intensityFactor = 0;
+				rangeFactor = 0;
 				return false;
 			}
 		}
