@@ -1,8 +1,8 @@
 {
   "name": "com.github.d3tonat0r.blendermodelfixer",
-  "version": "0.1.0",
-  "displayName": "D3T - Blender Model Fixer",
-  "description": "Asset Postprocessor for fixing axis orientation related issues with blender models.",
+  "version": "0.2.0",
+  "displayName": "Blender Model Fixer",
+  "description": "Provides an asset postprocessor for fixing axis orientation related issues with blender models.",
   "unity": "2019.4",
   "category": "",
   "author": {

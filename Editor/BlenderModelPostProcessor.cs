@@ -6,8 +6,10 @@ using UnityEngine;
 
 namespace D3TEditor.BlenderModelFixer
 {
-	public class BlenderFBXPostProcessor : AssetPostprocessor
+	public class BlenderModelPostProcessor : AssetPostprocessor
 	{
+
+		const float SQRT_2_HALF = 0.70710678f;
 
 		void OnPostprocessModel(GameObject root)
 		{
@@ -45,8 +47,8 @@ namespace D3TEditor.BlenderModelFixer
 					}
 				}
 
-				//Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-89.98f, flipZ ? 180 : 0, 0));
-				Matrix4x4 matrix = Matrix4x4.Rotate(Quaternion.Euler(-90, flipZ ? 180 : 0, 0));
+				Quaternion rotation = flipZ ? new Quaternion(0, SQRT_2_HALF, SQRT_2_HALF, 0) : new Quaternion(-SQRT_2_HALF, 0, 0, SQRT_2_HALF);
+				Matrix4x4 matrix = Matrix4x4.Rotate(rotation);
 				foreach(var mesh in meshes)
 				{
 					ApplyMeshFix(mesh, matrix, mi.importTangents != ModelImporterTangents.None);
@@ -142,9 +144,10 @@ namespace D3TEditor.BlenderModelFixer
 
 			float sign = flipZ ? 1 : -1;
 
-			if((t.localEulerAngles - new Vector3(89.98f * sign, 0, 0)).sqrMagnitude < 0.001f)
+			if((t.localEulerAngles - new Vector3(89.98f * sign, 0, 0)).magnitude < 0.001f)
 			{
-				t.Rotate(new Vector3(-89.98f * sign, 0, 0), Space.Self);
+				//Reset local rotation
+				t.localRotation = Quaternion.identity;
 			}
 			else
 			{

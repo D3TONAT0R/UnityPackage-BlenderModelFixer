@@ -47,7 +47,7 @@ namespace D3TEditor.BlenderModelFixer
 			int fixableModels = 0;
 			for(int i = 0; i < targets.Length; i++)
 			{
-				if(BlenderFBXPostProcessor.IsModelValidForFix(AssetDatabase.GetAssetPath(targets[i])))
+				if(BlenderModelPostProcessor.IsModelValidForFix(AssetDatabase.GetAssetPath(targets[i])))
 				{
 					fixableModels++;
 				}
